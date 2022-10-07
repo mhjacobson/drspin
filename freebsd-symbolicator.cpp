@@ -253,8 +253,7 @@ std::string Library::symbolicate(const uintptr_t address) const {
 
     std::string base_string = "???";
 
-    if (iter != _symbols.end()) {
-        assert(iter != _symbols.begin());
+    if (iter != _symbols.begin()) {
         iter--;
 
         const Symbol &symbol = *iter;
@@ -300,8 +299,7 @@ std::string FreeBSDSymbolicator::symbolicate(const uintptr_t address) {
         return address < library.load_address();
     });
 
-    if (iter != _libraries.end()) {
-        assert(iter != _libraries.begin());
+    if (iter != _libraries.begin()) {
         iter--;
 
         const Library &library = *iter;
