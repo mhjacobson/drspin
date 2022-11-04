@@ -16,7 +16,7 @@
 #ifndef LLDB_SYMBOLICATOR_H
 #define LLDB_SYMBOLICATOR_H
 
-struct LLDBSymbolicator : public Symbolicator, public DeleteImplicit {
+struct LLDBSymbolicator : public Symbolicator, private DeleteImplicit {
     LLDBSymbolicator(pid_t pid);
     std::string symbolicate(uintptr_t address);
     ~LLDBSymbolicator();

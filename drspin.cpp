@@ -118,7 +118,7 @@ private:
     std::vector<Sample> _samples;
 };
 
-struct Process : public DeleteImplicit {
+struct Process : private DeleteImplicit {
     Process(const pid_t pid) {
         _pid = pid;
         _info = kinfo_getproc(pid);
