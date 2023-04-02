@@ -180,6 +180,8 @@ size_t Symbol::size() const {
 
 Library::Library(const std::string path, const uintptr_t load_address)
 : _path(path), _load_address(load_address) {
+    if (path == "[vdso]") return;
+
     const MappedFile file(path);
     const Elf_Ehdr *const header = file.read<Elf_Ehdr>(0);
 
