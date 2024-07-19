@@ -7,6 +7,7 @@
 
 #include "freebsd-symbolicator.h"
 #include <assert.h>
+#include <filesystem>
 #include <optional>
 #include <string>
 #include <utility>
@@ -281,10 +282,8 @@ std::string Library::path() const {
     return _path;
 }
 
-#include <libgen.h>
 std::string Library::name() const {
-    // TODO: improve
-    return std::string(basename((char *)_path.c_str()));
+    return std::filesystem::path(_path).filename().string();
 }
 
 uintptr_t Library::load_address() const {
