@@ -199,8 +199,15 @@ int main(int argc, const char *argv[]) {
             rv = ptrace(PT_GETREGS, lwpid, (caddr_t)&regs, 0);
             assert(!rv);
 
+#if defined(__x86_64__) && __x86_64__
             uintptr_t pc = regs.r_rip;
             uintptr_t fp = regs.r_rbp;
+#elif defined(__aarch64__) && __aarch64__
+            uintptr_t pc = regs.elr; // "exception link register" -- i.e., PC saved from when we interrupted the process
+            uintptr_t fp = regs.x[29]; // x29 by convention
+#else
+#error don't know how to get pc/fp
+#endif
 
             for (;;) {
 #if 0
@@ -219,8 +226,12 @@ int main(int argc, const char *argv[]) {
                 const bool fault = (errno == EFAULT);
                 assert(!rv || fault);
 
+#if (defined(__x86_64__) && __x86_64__) || (defined(__aarch64__) && __aarch64__)
                 const uintptr_t next_fp = data[0];
                 const uintptr_t next_pc = data[1];
+#else
+#error don't know how to get next pc/fp
+#endif
 
                 if (next_fp <= fp || next_fp - fp > 1024 * 1024 || fault) {
 #if 0
