@@ -7,6 +7,9 @@
 
 #include "freebsd-symbolicator.h"
 #include <assert.h>
+#include <optional>
+#include <string>
+#include <utility>
 #include <vector>
 #include <fcntl.h>
 #include <unistd.h>
@@ -92,7 +95,7 @@ private:
 };
 
 // Scan the process's `auxv` array for an AT_PHDR entry, and return its value, which is the address of the Elf_Phdr in the process's address space.
-RemoteArray<Elf_Phdr> get_phdr_array(const pid_t pid) {
+std::pair<RemoteArray<Elf_Phdr>, uintptr_t> get_phdr_array(const pid_t pid) {
     const int mib[4] = { CTL_KERN, KERN_PROC, KERN_PROC_AUXV, pid };
     Elf_Auxinfo auxv[AT_COUNT];
     size_t auxv_size = sizeof (auxv);
@@ -112,25 +115,30 @@ RemoteArray<Elf_Phdr> get_phdr_array(const pid_t pid) {
         }
     }
 
-    return RemoteArray<Elf_Phdr>(pid, base_address, count);
-}
-
-Elf_Phdr get_dynamic_phdr(const pid_t pid) {
-    const RemoteArray<Elf_Phdr> phdr_array = get_phdr_array(pid);
-
-    for (const Elf_Phdr phdr : phdr_array) {
-        if (phdr.p_type == PT_DYNAMIC) {
-            return phdr;
-        }
-    }
-
-    // Didn't find a PT_DYNAMIC?
-    abort();
+    return { RemoteArray<Elf_Phdr>(pid, base_address, count), base_address };
 }
 
 RemoteArray<Elf_Dyn> get_dyn_array(const pid_t pid) {
-    const Elf_Phdr dynamic_phdr = get_dynamic_phdr(pid);
-    return RemoteArray<Elf_Dyn>(pid, dynamic_phdr.p_vaddr, dynamic_phdr.p_filesz / sizeof (Elf_Dyn));
+    const auto [phdr_array, phdr_base_address] = get_phdr_array(pid);
+
+    std::optional<uintptr_t> dyn_base_address;
+    std::optional<size_t> dyn_count;
+    std::optional<intptr_t> slide;
+
+    for (const Elf_Phdr phdr : phdr_array) {
+        if (phdr.p_type == PT_PHDR) {
+            slide = (intptr_t)phdr_base_address - phdr.p_vaddr;
+        } else if (phdr.p_type == PT_DYNAMIC) {
+            dyn_base_address = phdr.p_vaddr;
+            dyn_count = phdr.p_filesz / sizeof (Elf_Dyn);
+        }
+    }
+
+    assert(dyn_base_address.has_value());
+    assert(dyn_count.has_value());
+    assert(slide.has_value());
+
+    return RemoteArray<Elf_Dyn>(pid, dyn_base_address.value() + slide.value(), dyn_count.value());
 }
 
 uintptr_t read_debug_ptr(const pid_t pid) {
