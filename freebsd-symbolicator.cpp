@@ -277,6 +277,10 @@ std::string Library::symbolicate(const uintptr_t address) const {
     return base_string + " (in " + name() + ")";
 }
 
+std::string Library::path() const {
+    return _path;
+}
+
 #include <libgen.h>
 std::string Library::name() const {
     // TODO: improve
@@ -316,5 +320,11 @@ std::string FreeBSDSymbolicator::symbolicate(const uintptr_t address) {
         return library.symbolicate(library.base_address() + address - library.load_address());
     } else {
         return "???";
+    }
+}
+
+void FreeBSDSymbolicator::print_libraries() const {
+    for (const Library &library : _libraries) {
+        printf("%#18lx  %s\n", library.load_address(), library.path().c_str());
     }
 }

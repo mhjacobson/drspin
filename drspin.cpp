@@ -268,6 +268,9 @@ int main(int argc, const char *argv[]) {
     FreeBSDSymbolicator symbolicator(pid);
     process.print_tree(symbolicator);
 
+    printf("Binaries:\n");
+    symbolicator.print_libraries();
+
     rv = ptrace(PT_DETACH, pid, (caddr_t)1, 0);
     assert(!rv);
 

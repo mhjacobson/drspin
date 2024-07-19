@@ -27,6 +27,7 @@ private:
 struct Library {
     Library(std::string path, uintptr_t load_address);
     std::string symbolicate(uintptr_t address) const;
+    std::string path() const;
     std::string name() const;
     uintptr_t load_address() const;
     uintptr_t base_address() const;
@@ -40,6 +41,7 @@ private:
 struct FreeBSDSymbolicator : public Symbolicator {
     FreeBSDSymbolicator(pid_t pid);
     std::string symbolicate(uintptr_t address);
+    void print_libraries() const;
 private:
     pid_t _pid;
     std::vector<Library> _libraries;
