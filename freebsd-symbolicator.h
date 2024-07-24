@@ -39,12 +39,20 @@ private:
 };
 
 struct FreeBSDSymbolicator : public Symbolicator {
-    FreeBSDSymbolicator(pid_t pid);
     std::string symbolicate(uintptr_t address);
     void print_libraries() const;
+protected:
+    std::vector<Library> _libraries;
+};
+
+struct FreeBSDUserSymbolicator : public FreeBSDSymbolicator {
+    FreeBSDUserSymbolicator(pid_t pid);
 private:
     pid_t _pid;
-    std::vector<Library> _libraries;
+};
+
+struct FreeBSDKernelSymbolicator : public FreeBSDSymbolicator {
+    FreeBSDKernelSymbolicator();
 };
 
 #endif /* FREEBSD_SYMBOLICATOR_H */

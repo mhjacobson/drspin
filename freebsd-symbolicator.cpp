@@ -15,6 +15,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/elf.h>
+#include <sys/param.h> // must go before <sys/linker.h>: <https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=280432>
+#include <sys/linker.h>
 #include <sys/link_elf.h>
 #include <sys/mman.h>
 #include <sys/ptrace.h>
@@ -294,13 +296,23 @@ uintptr_t Library::base_address() const {
     return _base_address;
 }
 
-FreeBSDSymbolicator::FreeBSDSymbolicator(const pid_t pid) {
+FreeBSDUserSymbolicator::FreeBSDUserSymbolicator(const pid_t pid) {
     _pid = pid;
     _libraries = read_libraries(pid);
 
     std::sort(_libraries.begin(), _libraries.end(), [](const Library &a, const Library b) {
         return a.load_address() < b.load_address();
     });
+}
+
+FreeBSDKernelSymbolicator::FreeBSDKernelSymbolicator() {
+    for (int fileid = kldnext(0); fileid > 0; fileid = kldnext(fileid)) {
+        struct kld_file_stat stat = { .version = sizeof (struct kld_file_stat) };
+        const int rv = kldstat(fileid, &stat);
+        assert(!rv);
+
+        _libraries.emplace_back(std::string("/boot/kernel/") + stat.name, (uintptr_t)stat.address);
+    }
 }
 
 std::string FreeBSDSymbolicator::symbolicate(const uintptr_t address) {
